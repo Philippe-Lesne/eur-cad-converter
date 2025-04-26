@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Convertisseur EUR ↔ CAD</title>
+  <style>
+    body { font-family: sans-serif; margin: 2em; }
+    input, select { font-size: 1em; padding: 0.2em; }
+    #result { font-weight: bold; }
+  </style>
+</head>
+<body>
+  <input type="number" id="amount" step="any" placeholder="Montant en dollars canadiens" />
+  <select id="direction">
+    <option value="cad-eur">CAD → EUR</option>
+    <option value="eur-cad">EUR → CAD</option>
+  </select>
+  <div>Montant converti : <span id="result"></span></div>
+  <script>
+    const amountInput = document.getElementById('amount');
+    const directionSelect = document.getElementById('direction');
+    const resultSpan = document.getElementById('result');
+    let currentRate = null;
+    let toCurrency = "EUR";
+    function fetchRate(fromCurrency, toCurrency) {
+      const url = `https://api.frankfurter.app/latest?from=${fromCurrency}&to=${toCurrency}`;
+      fetch(url)
+        .then(response => response.json())
+        .then(data => {
+          currentRate = data.rates[toCurrency];
+          updateResult();
+        })
+        .catch(err => console.error("Erreur lors de la récupération du taux :", err));
+    }
+    function updateResult() {
+      const amount = parseFloat(amountInput.value);
+      if (!currentRate || isNaN(amount)) { resultSpan.textContent = ""; return; }
+      const converted = amount * currentRate;
+      resultSpan.textContent = converted.toFixed(2) + " " + toCurrency;
+    }
+    amountInput.addEventListener('input', updateResult);
+    directionSelect.addEventListener('change', () => {
+      const [from, to] = directionSelect.value.split("-");
+      amountInput.placeholder = (from.toUpperCase() === "CAD")
+        ? "Montant en dollars canadiens" : "Montant en euros";
+      toCurrency = to.toUpperCase();
+      fetchRate(from.toUpperCase(), toCurrency);
+    });
+    fetchRate("CAD", "EUR");
+  </script>
+</body>
+</html>
